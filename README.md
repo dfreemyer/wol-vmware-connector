@@ -1,25 +1,20 @@
-# wol-packet-replicator
-A very simple python script that replicates the listens for UDP wake on lan packets from outside the network
+# wol-vmware-connector
+A very simple python script that listens for UDP Wake-On-Lan packets and connects to a vCenter server to power on the Guest with the matching MAC Address.
 
-This is a easy way of using Wake on Lan from outside the network when your router does not support forwarding ports to the broadcast address.  
-It also allows you to enforce the SecureOn if your NIC does not support it.
-I use it in a Raspberry Pi without running into any problems so far.
+A Fork of [wol-packet-replicator](https://github.com/jaime29010/wol-packet-replicator/blob/master/settings.py#L7-L11) by Jaime Martínez Rincón 
+
+The built in WOL capabilities of vSphere/vCenter only allow for waking guests that are in standby, not powered off completely. By utilizing the REST API provided in vCenter 6.5/6.7 we can power on any Guest, providing we have the appropriate permissions.
 
 ## Usage
-1. Clone this repository: `git clone https://github.com/jaime29010/wol-packet-replicator`
-2. Run it directly: `python replicator.py` or in a background task (tmux, screen)
+1. Clone this repository: `git clone https://github.com/dfreemyer/wol-vmware-connector`
+2. Fill in the connection details for your vCenter Server in `settings.py`
+3. Run it directly: `python replicator.py` or in a background task (tmux, screen)
 
-### Configuring your router
-For this to work at all you will need to allow the traffic to go to the device where this application is running.  
-It is recommended to do all of this:
-1. Assign a reserved IP address on your DHCP settings or configure the IP manually on the device
-2. Forward the local port (5009 by default) to the external port you want
-3. Setup dynamic dns, you can do this on your router if it supports it or in the same device
+### Creating a vCenter user for API use
+You can test it out using your vCenter Admin user, usually `Administrator@your.domain` but that's far more permission than the script needs.
+All we require is the `VM -> Interaction -> Power On` Privilege, and permissions on the Guests you want the script to be able to act on.
 
-After you have done that, you can just send the WOL packet to the hostname and external port you chose.  
-You can test it with [this tool](http://www.wakeonlan.me/index.php)  
-Check the output of the script or the `app.log` file to see the debug messages this prints
-
-### Enforcing SecureOn passwords
-You can also add your own settings [here](https://github.com/jaime29010/wol-packet-replicator/blob/master/settings.py#L7-L11) as shown in the two examples. 
-This is a great way of making sure only you can wake up your devices even if your NIC does not support SecureOn
+1. Create a new Role, `WOL User`, and add the `VM -> Interaction -> Power On` privilege.
+2. Create a new User, and assign it the `WOL User` role.
+3. For each Guest you wish to be able to Wake-On-Lan, right click on it in your inventory and choose `Add Permission...`
+4. Enter your newly created user and select the `WOL Role` and click `OK`

@@ -16,8 +16,6 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 VCAPI_SESSION=requests.Session()
 VCAPI_SESSION.verify = False
 
-LAST_ADDRESS = ""
-
 # https://regex101.com/r/2l8eJp/3
 DGRAM_REGEX = re.compile(r'(?:^([fF]{12})(([0-9a-fA-F]{12}){16})([0-9a-fA-F]{12})?$)')
 
@@ -29,12 +27,12 @@ def start_vcapi_session():
         logger.error("VCAPI login failed, check your credentials")
         return False
 
-def get_vms():
+def get_list_of_guests():
     response = VCAPI_SESSION.get('https://' + VCENTER_ADDRESS + '/rest/vcenter/vm')
     vms_json = json.loads(response.text)
     return vms_json["value"]
 
-def vm_has_mac(vmid, mac_addr):
+def guest_has_mac(vmid, mac_addr):
     response = VCAPI_SESSION.get('https://' + VCENTER_ADDRESS + '/rest/vcenter/vm/' + vmid + '/hardware/ethernet')
     nic_json = json.loads(response.text)
     has_mac = False
@@ -50,7 +48,10 @@ def vm_has_mac(vmid, mac_addr):
 def power_on_guest(vmid):
     logger.debug("Powering on Guest " + vmid)
     response = VCAPI_SESSION.post('https://' + VCENTER_ADDRESS + '/rest/vcenter/vm/' + vmid + '/power/start')
-    print(response.status_code)
+    if response.status_code == 200:
+        logger.info("Guest Powered On Successfully")
+    else:
+        logger.info("Guest Power-On Failed")
 
 def handle_packet(data):
     payload = bytes.hex(data)
@@ -61,9 +62,9 @@ def handle_packet(data):
         logger.debug("Forwarding the packet for %s" % (address))
         if start_vcapi_session():
             # Session Started, Lets search the VMs
-            guests = get_vms()
+            guests = get_list_of_guests()
             for guest in guests:
-                if vm_has_mac(guest["vm"], address):
+                if guest_has_mac(guest["vm"], address):
                     power_on_guest(guest["vm"])
                     break;
     else:
@@ -83,7 +84,7 @@ def start_listener():
 if __name__ == '__main__':
     logFormatter = logging.Formatter("%(asctime)s [%(levelname)s] - %(message)s")
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(LOG_LEVEL)
 
     path = os.path.dirname(os.path.realpath(__file__))
     file = os.path.join(path, "app.log")
