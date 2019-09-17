@@ -8,7 +8,7 @@ The built in WOL capabilities of vSphere/vCenter only allow for waking guests th
 ## Usage
 1. Clone this repository: `git clone https://github.com/dfreemyer/wol-vmware-connector`
 2. Fill in the connection details for your vCenter Server in `settings.py`
-3. Run it directly: `python replicator.py` or in a background task (tmux, screen)
+3. Run it directly: `python connector.py` or in a background task (tmux, screen)
 
 ### Creating a vCenter user for API use
 You can test it out using your vCenter Admin user, usually `Administrator@your.domain` but that's far more permission than the script needs.
